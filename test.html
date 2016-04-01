@@ -1,0 +1,151 @@
+<div id="complete">
+    <div class="row">
+        <div class="col-md-7">
+            <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+            <style>
+                .relevant > .ui-state-default {
+                    background: red;
+                    color: #FFF;
+                }
+            </style>
+            <br>
+            <div>
+                <form id="form_booking" action="ajax?action=bookingProcess" method="post">
+                    <input type="hidden" name="date_begin" id="date_begin">
+                    <input type="hidden" name="date_end" id="date_end">
+                    <input type="hidden" name="type" value="hotel">
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h3>arrival:</h3>
+                            <input type="text" class="form-control input-lg" id="datepicker_begin" placeholder="von"
+                                   readonly="readonly">
+                        </div>
+                        <div class="col-md-4">
+                            <h3>departure:</h3>
+                            <input type="text" class="form-control input-lg" id="datepicker_end" placeholder="bis"
+                                   readonly="readonly">
+                        </div>
+                    </div>
+                    <br>
+
+                 </form>
+
+            </div>
+            <div id="result" style="display: none;"></div>
+            <hr>
+        </div>
+    </div>
+
+
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script src="https://www.first-class-golf.com/files/first-class-golf/assets/js/jquery.form.js" type="text/javascript"></script>
+<script>
+    function initializeBooking() {
+        $('#form_booking').ajaxSubmit({
+            target: '#result',
+            success: function () {
+                $('#result').fadeIn('slow');
+            }
+        });
+        return false;
+    }
+	// hotel nights.. available is 2, 3, 4, 5, 6, 7, 8, 9 nights.
+    var nights = 2;
+    // arrival weekday in hotel: monday = 1 ..... sunday = 7
+    var arrival = 7;
+    // flexbooking = no .. otherwise you can arrive when you want.
+    var flex_booking = 'no';
+
+    var couter = arrival + nights;
+    var diff   = 0;
+
+    if(couter>7)
+        diff = couter-7;
+
+
+    $(function () {
+        cal_start = new Date();
+        cal_start.setTime(cal_start.getTime() + (24 * 60 * 60 * 1000 * 1));
+
+        $("#datepicker_begin").datepicker({
+            showWeek: true,
+            beforeShowDay: function (date) {
+                weekday = date.getDay();
+                if (weekday == 0)
+                    weekday = 7;
+
+                if (flex_booking == 'no') {
+                    if (weekday == arrival) {
+                        result = [true, "relevant"];		// clickable for the arrival day
+                    } else if (weekday > arrival && weekday <= (arrival + nights)) {
+                        result = [false, "relevant"];    // red but no clickable for the days you are staying in the hotel
+                    } else {
+                        result = [false, ""];	// normal days outside the booking range. could be possible nights > 6 that this is not set and everything is red
+                    }
+                    if(diff>0 && weekday<=diff)
+                    {
+                        result = [false, "relevant"];
+                    }
+
+                } else {
+                    result = [true, "relevant"];
+                }
+
+                return result;
+            },
+            altField: "#date_begin",
+            altFormat: "@",
+            showOtherMonths: false,
+            selectOtherMonths: false,
+            numberOfMonths: 3,
+            dateFormat: "dd.mm.yy",
+            firstDay: 1,
+            minDate: cal_start,
+            maxDate: "+12m",
+            onSelect: function () {
+                begin = eval($("#date_begin").val());
+
+                start = new Date();
+                start.setTime(begin);
+
+                days = nights;
+
+                end = new Date();
+                end.setTime(begin + (24 * 60 * 60 * 1000 * days));
+                $("#date_end").val(begin + (24 * 60 * 60 * 1000 * days));
+
+                after = new Date();
+                after.setTime(begin + (24 * 60 * 60 * 1000 * days) + (24 * 60 * 60 * 1000));
+
+                $("#datepicker_end").val(('0' + end.getDate()).slice(-2) + '.' + ('0' + (end.getMonth() + 1)).slice(-2) + '.' + end.getFullYear());
+                $("#nights_span").html(new Date(end - begin) / 1000 / 60 / 60 / 24);
+
+
+                $("#datepicker_end").datepicker("destroy");
+                $("#datepicker_end").datepicker({
+                    beforeShowDay: function (date) {
+                        return [false, ""];
+                    },
+                    altField: "#date_end",
+                    altFormat: "@",
+                    minDate: new Date(end),
+                    maxDate: new Date(after),
+                    showOtherMonths: false,
+                    selectOtherMonths: false,
+                    numberOfMonths: 1,
+                    dateFormat: "dd.mm.yy",
+                    firstDay: 1,
+                    onSelect: function (dateText) {
+                        initializeBooking();
+                    }
+                });
+
+                initializeBooking();
+            }
+        });
+    });
+</script>
